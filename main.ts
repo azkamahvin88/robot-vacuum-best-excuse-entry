@@ -4,7 +4,7 @@
 // line breaks the competition rules, so a bad line can never be
 // submitted by accident.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 // The winning line, picked from 14 candidates in CANDIDATES.md:
@@ -37,6 +37,18 @@ if (length < 1 || length > MAX_CHARS) {
 const outDir = resolve(process.env.OUTPUT_DIR ?? "output");
 mkdirSync(outDir, { recursive: true });
 const outFile = join(outDir, "entry.txt");
-writeFileSync(outFile, `${LINE}\n`, "utf8");
+const expected = `${LINE}\n`;
+writeFileSync(outFile, expected, "utf8");
+
+// Read-back verification: confirm what landed on disk is exactly
+// the line plus one trailing newline. A partial or garbled write
+// must fail loudly here instead of reaching a submission.
+const written = readFileSync(outFile, "utf8");
+if (written !== expected) {
+  fail(
+    `read-back mismatch: wrote ${JSON.stringify(expected)}, ` +
+      `read back ${JSON.stringify(written)}`,
+  );
+}
 
 console.log(`wrote ${length} characters to ${outFile}`);
